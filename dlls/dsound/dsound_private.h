@@ -19,6 +19,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#ifdef __REACTOS__
+#include <dsdriver.h>
+#endif // __REACTOS__
+
 /* Linux does not support better timing than 10ms */
 #define DS_TIME_RES 2  /* Resolution of multimedia timer */
 #define DS_TIME_DEL 10  /* Delay of multimedia timer callback, and duration of HEL fragment */
@@ -64,6 +68,7 @@ extern const mixfunc mixfunctions[4] DECLSPEC_HIDDEN;
 typedef void (*normfunc)(const void *, void *, unsigned);
 extern const normfunc normfunctions[4] DECLSPEC_HIDDEN;
 
+#ifndef __REACTOS__
 typedef struct _DSVOLUMEPAN
 {
     DWORD	dwTotalLeftAmpFactor;
@@ -74,6 +79,7 @@ typedef struct _DSVOLUMEPAN
     DWORD	dwPanLeftAmpFactor;
     DWORD	dwPanRightAmpFactor;
 } DSVOLUMEPAN,*PDSVOLUMEPAN;
+#endif // __REACTOS__
 
 /*****************************************************************************
  * IDirectSoundDevice implementation structure

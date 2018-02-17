@@ -18,28 +18,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <assert.h>
-
-#define COBJMACROS
-
-#include "wine/library.h"
-#include "windef.h"
-#include "winbase.h"
-#include "winreg.h"
-#include "ole2.h"
-#include "cor.h"
-#include "mscoree.h"
-#include "corhdr.h"
-#include "cordebug.h"
-#include "metahost.h"
-#include "wine/list.h"
 #include "mscoree_private.h"
-
-#include "wine/debug.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL( mscoree );
 
 typedef struct MetaDataDispenser
 {

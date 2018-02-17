@@ -16,18 +16,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include "config.h"
+#include "netapi32.h"
 
-#include "wine/debug.h"
-#include "lm.h"
-#include "lmat.h"
-#include "netbios.h"
+#include <lmserver.h>
 
-WINE_DEFAULT_DEBUG_CHANNEL(netbios);
-
-static HMODULE NETAPI32_hModule;
-
-BOOL NETAPI_IsLocalComputer(LMCSTR ServerName);
+WINE_DEFAULT_DEBUG_CHANNEL(netapi32);
 
 BOOL WINAPI DllMain (HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
@@ -35,82 +28,17 @@ BOOL WINAPI DllMain (HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
     switch (fdwReason) {
         case DLL_PROCESS_ATTACH:
-        {
             DisableThreadLibraryCalls(hinstDLL);
-            NETAPI32_hModule = hinstDLL;
             NetBIOSInit();
             NetBTInit();
             break;
-        }
         case DLL_PROCESS_DETACH:
-        {
+            if (lpvReserved) break;
             NetBIOSShutdown();
             break;
-        }
     }
 
     return TRUE;
-}
-
-/************************************************************
- *                NetServerEnum (NETAPI32.@)
- */
-NET_API_STATUS  WINAPI NetServerEnum(
-  LMCSTR servername,
-  DWORD level,
-  LPBYTE* bufptr,
-  DWORD prefmaxlen,
-  LPDWORD entriesread,
-  LPDWORD totalentries,
-  DWORD servertype,
-  LMCSTR domain,
-  LPDWORD resume_handle
-)
-{
-    FIXME("Stub (%s %d %p %d %p %p %d %s %p)\n", debugstr_w(servername),
-     level, bufptr, prefmaxlen, entriesread, totalentries, servertype,
-     debugstr_w(domain), resume_handle);
-
-    return ERROR_NO_BROWSER_SERVERS_FOUND;
-}
-
-/************************************************************
- *                NetServerEnumEx (NETAPI32.@)
- */
-NET_API_STATUS WINAPI NetServerEnumEx(
-    LMCSTR ServerName,
-    DWORD Level,
-    LPBYTE *Bufptr,
-    DWORD PrefMaxlen,
-    LPDWORD EntriesRead,
-    LPDWORD totalentries,
-    DWORD servertype,
-    LMCSTR domain,
-    LMCSTR FirstNameToReturn)
-{
-    FIXME("Stub (%s %d %p %d %p %p %d %s %p)\n", debugstr_w(ServerName),
-     Level, Bufptr, PrefMaxlen, EntriesRead, totalentries, servertype,
-     debugstr_w(domain), debugstr_w(FirstNameToReturn));
-                                                                                
-    return ERROR_NO_BROWSER_SERVERS_FOUND;
-}
-
-/************************************************************
- *                NetServerDiskEnum (NETAPI32.@)
- */
-NET_API_STATUS WINAPI NetServerDiskEnum(
-    LMCSTR ServerName,
-    DWORD Level,
-    LPBYTE *Bufptr,
-    DWORD PrefMaxlen,
-    LPDWORD EntriesRead,
-    LPDWORD totalentries,
-    LPDWORD Resume_Handle)
-{
-    FIXME("Stub (%s %d %p %d %p %p %p)\n", debugstr_w(ServerName),
-     Level, Bufptr, PrefMaxlen, EntriesRead, totalentries, Resume_Handle);
-
-    return ERROR_NO_BROWSER_SERVERS_FOUND;
 }
 
 /************************************************************
@@ -173,83 +101,3 @@ NET_API_STATUS WINAPI NetServerGetInfo(LMSTR servername, DWORD level, LPBYTE* bu
     return ret;
 }
 
-
-/************************************************************
- *                NetStatisticsGet  (NETAPI32.@)
- */
-NET_API_STATUS WINAPI NetStatisticsGet(LMSTR server, LMSTR service,
-                                       DWORD level, DWORD options,
-                                       LPBYTE *bufptr)
-{
-    TRACE("(%p, %p, %d, %d, %p)\n", server, service, level, options, bufptr);
-    return NERR_InternalError;
-}
-
-DWORD WINAPI NetpNetBiosStatusToApiStatus(DWORD nrc)
-{
-    DWORD ret;
-
-    switch (nrc)
-    {
-        case NRC_GOODRET:
-            ret = NO_ERROR;
-            break;
-        case NRC_NORES:
-            ret = NERR_NoNetworkResource;
-            break;
-        case NRC_DUPNAME:
-            ret = NERR_AlreadyExists;
-            break;
-        case NRC_NAMTFUL:
-            ret = NERR_TooManyNames;
-            break;
-        case NRC_ACTSES:
-            ret = NERR_DeleteLater;
-            break;
-        case NRC_REMTFUL:
-            ret = ERROR_REM_NOT_LIST;
-            break;
-        case NRC_NOCALL:
-            ret = NERR_NameNotFound;
-            break;
-        case NRC_NOWILD:
-            ret = ERROR_INVALID_PARAMETER;
-            break;
-        case NRC_INUSE:
-            ret = NERR_DuplicateName;
-            break;
-        case NRC_NAMERR:
-            ret = ERROR_INVALID_PARAMETER;
-            break;
-        case NRC_NAMCONF:
-            ret = NERR_DuplicateName;
-            break;
-        default:
-            ret = NERR_NetworkError;
-    }
-    return ret;
-}
-
-NET_API_STATUS WINAPI NetUseEnum(LMSTR server, DWORD level, LPBYTE* bufptr, DWORD prefmaxsize,
-                          LPDWORD entriesread, LPDWORD totalentries, LPDWORD resumehandle)
-{
-    FIXME("stub (%p, %d, %p, %d, %p, %p, %p)\n", server, level, bufptr, prefmaxsize,
-           entriesread, totalentries, resumehandle);
-    return ERROR_NOT_SUPPORTED;
-}
-
-NET_API_STATUS WINAPI NetScheduleJobEnum(LPCWSTR server, LPBYTE* bufptr, DWORD prefmaxsize, LPDWORD entriesread,
-                                         LPDWORD totalentries, LPDWORD resumehandle)
-{
-    FIXME("stub (%s, %p, %d, %p, %p, %p)\n", debugstr_w(server), bufptr, prefmaxsize, entriesread, totalentries, resumehandle);
-    *entriesread = 0;
-    *totalentries = 0;
-    return NERR_Success;
-}
-
-NET_API_STATUS WINAPI NetUseGetInfo(LMSTR server, LMSTR name, DWORD level, LPBYTE *bufptr)
-{
-    FIXME("stub (%p, %p, %d, %p)\n", server, name, level, bufptr);
-    return ERROR_NOT_SUPPORTED;
-
-}

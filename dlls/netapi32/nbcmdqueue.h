@@ -17,11 +17,6 @@
 #ifndef __NBCMDQUEUE_H__
 #define __NBCMDQUEUE_H__
 
-#include <stdarg.h>
-#include "windef.h"
-#include "winbase.h"
-#include "nb30.h"
-
 /* This file defines a queue of pending NetBIOS commands.  The queue operations
  * are thread safe, with the exception of NBCmdQueueDestroy:  ensure no other
  * threads are manipulating the queue when calling NBCmdQueueDestroy.

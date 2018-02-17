@@ -18,10 +18,26 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#define NONAMELESSUNION
+#define NONAMELESSSTRUCT
+#define COBJMACROS
+
+#include <stdarg.h>
+#include "windef.h"
+#include "winbase.h"
+#include "wingdi.h"
+
 #include "amstream_private.h"
 
+#include "ddstream.h"
+#include "wine/debug.h"
+
+WINE_DEFAULT_DEBUG_CHANNEL(amstream);
+
+#ifdef __REACTOS__
 #include <initguid.h>
 DEFINE_GUID(IID_IDirectDraw7, 0x15e65ec0,0x3b9c,0x11d2,0xb9,0x2f,0x00,0x60,0x97,0x97,0xea,0x5b);
+#endif
 
 static HRESULT ddrawstreamsample_create(IDirectDrawMediaStream *parent, IDirectDrawSurface *surface,
     const RECT *rect, IDirectDrawStreamSample **ddraw_stream_sample);

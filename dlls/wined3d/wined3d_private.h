@@ -25,6 +25,11 @@
 #ifndef __WINE_WINED3D_PRIVATE_H
 #define __WINE_WINED3D_PRIVATE_H
 
+#ifdef __REACTOS__
+#include <wine/config.h>
+#include <wine/port.h>
+#endif // __REACTOS__
+
 #ifdef USE_WIN32_OPENGL
 #define WINE_GLAPI __stdcall
 #else
@@ -57,6 +62,9 @@
 #include "wine/rbtree.h"
 #include "wine/wgl_driver.h"
 
+#ifdef __REACTOS__
+#include <reactos/undocuser.h>
+#endif // __REACTOS__
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
 #endif

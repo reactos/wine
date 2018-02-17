@@ -23,6 +23,10 @@
 #ifndef __WINE_D3D8_PRIVATE_H
 #define __WINE_D3D8_PRIVATE_H
 
+#ifdef __REACTOS__
+#include <config.h>
+#endif // __REACTOS__
+
 #include <assert.h>
 #include <stdarg.h>
 

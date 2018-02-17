@@ -21,32 +21,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include "config.h"
-#include "wine/port.h"
+#include "precomp.h"
 
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <ctype.h>
-
-#define COBJMACROS
-#define NONAMELESSUNION
-
-#include "winerror.h"
-#include "windef.h"
-#include "winbase.h"
-#include "winnls.h"
-#include "winreg.h"
-#include "winuser.h"
-
-#include "ole2.h"
-#include "propidl.h" /* for LPSAFEARRAY_User* functions */
 #include "typelib.h"
-#include "variant.h"
-#include "wine/debug.h"
-#include "wine/exception.h"
+
+#include <wine/exception.h>
 
 static const WCHAR IDispatchW[] = { 'I','D','i','s','p','a','t','c','h',0};
 
@@ -529,9 +508,14 @@ typedef struct _TMAsmProxy {
 } TMAsmProxy;
 #include "poppack.h"
 
+#else /* __i386__ */
+#ifdef _MSC_VER
+#pragma message("You need to implement stubless proxies for your architecture")
 #else
 # warning You need to implement stubless proxies for your architecture
+#endif
 typedef struct _TMAsmProxy {
+    char a;
 } TMAsmProxy;
 #endif
 

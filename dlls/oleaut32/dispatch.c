@@ -19,23 +19,7 @@
  *
  */
 
-#include "config.h"
-
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <ctype.h>
-
-#define COBJMACROS
-
-#include "windef.h"
-#include "winbase.h"
-#include "objbase.h"
-#include "oleauto.h"
-#include "winerror.h"
-
-#include "wine/debug.h"
+#include "precomp.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(ole);
 

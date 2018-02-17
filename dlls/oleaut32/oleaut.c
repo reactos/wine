@@ -18,29 +18,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include "config.h"
+#include "precomp.h"
 
-#include <stdarg.h>
-#include <string.h>
-#include <limits.h>
+#include <initguid.h>
+#include <oleaut32_oaidl.h>
 
-#define COBJMACROS
-
-#include "windef.h"
-#include "winbase.h"
-#include "wingdi.h"
-#include "winuser.h"
-#include "winerror.h"
-
-#include "ole2.h"
-#include "olectl.h"
-#include "oleauto.h"
-#include "initguid.h"
 #include "typelib.h"
-#include "oleaut32_oaidl.h"
-
-#include "wine/debug.h"
-#include "wine/unicode.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(ole);
 WINE_DECLARE_DEBUG_CHANNEL(heap);
@@ -117,7 +100,7 @@ static inline size_t bstr_alloc_size(size_t size)
 
 static inline bstr_t *bstr_from_str(BSTR str)
 {
-    return CONTAINING_RECORD(str, bstr_t, u.str);
+    return CONTAINING_RECORD((void *)str, bstr_t, u.str);
 }
 
 static inline bstr_cache_entry_t *get_cache_entry_from_idx(unsigned cache_idx)

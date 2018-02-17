@@ -37,26 +37,10 @@
  *      Optimize WINMM and negotiate fragment size, decrease DS_HEL_MARGIN
  */
 
-#include <stdarg.h>
-#include <math.h>	/* Insomnia - pow() function */
-
-#define NONAMELESSUNION
-#define NONAMELESSSTRUCT
-#include "windef.h"
-#include "winbase.h"
-#include "winuser.h"
-#include "mmsystem.h"
-#include "winternl.h"
-#include "mmddk.h"
-#include "wine/debug.h"
-#include "dsound.h"
-#include "dsdriver.h"
 #include "dsound_private.h"
 
 /* default velocity of sound in the air */
 #define DEFAULT_VELOCITY 340
-
-WINE_DEFAULT_DEBUG_CHANNEL(dsound3d);
 
 /*******************************************************************************
  *              Auxiliary functions
@@ -137,6 +121,7 @@ static inline D3DVECTOR VectorBetweenTwoPoints (const D3DVECTOR *a, const D3DVEC
 	return c;
 }
 
+#ifndef __REACTOS__
 /* calculates the length of vector's projection on another vector */
 static inline D3DVALUE ProjectVector (const D3DVECTOR *a, const D3DVECTOR *p)
 {
@@ -147,6 +132,7 @@ static inline D3DVALUE ProjectVector (const D3DVECTOR *a, const D3DVECTOR *p)
               p->y, p->z, result);
 	return result;
 }
+#endif
 
 /*******************************************************************************
  *              3D Buffer and Listener mixing

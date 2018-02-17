@@ -32,31 +32,10 @@
  *      Remove DS_HEL_FRAGS and use mixer fragment length for it
  */
 
-#include <stdarg.h>
-
-#define COBJMACROS
-#define NONAMELESSSTRUCT
-#define NONAMELESSUNION
-#include "windef.h"
-#include "winbase.h"
-#include "winuser.h"
-#include "winnls.h"
-#include "winreg.h"
-#include "mmsystem.h"
-#include "winternl.h"
-#include "mmddk.h"
-#include "wine/debug.h"
-#include "dsound.h"
-#include "dsconf.h"
-#include "ks.h"
-#include "rpcproxy.h"
-#include "initguid.h"
-#include "ksmedia.h"
-#include "dsdriver.h"
-
 #include "dsound_private.h"
 
-WINE_DEFAULT_DEBUG_CHANNEL(dsound);
+#include <winreg.h>
+#include <rpcproxy.h>
 
 DirectSoundDevice*	DSOUND_renderer[MAXWAVEDRIVERS];
 GUID                    DSOUND_renderer_guids[MAXWAVEDRIVERS];

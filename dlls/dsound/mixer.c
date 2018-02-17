@@ -22,26 +22,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include <assert.h>
-#include <stdarg.h>
-#include <math.h>	/* Insomnia - pow() function */
-
-#define NONAMELESSSTRUCT
-#define NONAMELESSUNION
-#include "windef.h"
-#include "winbase.h"
-#include "mmsystem.h"
-#include "wingdi.h"
-#include "mmreg.h"
-#include "winternl.h"
-#include "wine/debug.h"
-#include "dsound.h"
-#include "ks.h"
-#include "ksmedia.h"
-#include "dsdriver.h"
 #include "dsound_private.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(dsound);
 
 void DSOUND_RecalcVolPan(PDSVOLUMEPAN volpan)
 {
@@ -964,7 +945,7 @@ static void DSOUND_PerformMix(DirectSoundDevice *device)
 		}
 
 		/* if device was stopping, its for sure stopped when all buffers have stopped */
-		else if((all_stopped == TRUE) && (device->state == STATE_STOPPING)){
+		else if((all_stopped != FALSE) && (device->state == STATE_STOPPING)){
 			TRACE("All buffers have stopped. Stopping primary buffer\n");
 			device->state = STATE_STOPPED;
 

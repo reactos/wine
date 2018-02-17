@@ -20,23 +20,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include <stdarg.h>
-
-#define NONAMELESSSTRUCT
-#define NONAMELESSUNION
-#define COBJMACROS
-#include "windef.h"
-#include "winbase.h"
-#include "winuser.h"
-#include "mmsystem.h"
-#include "mmddk.h"
-#include "winternl.h"
-#include "wine/debug.h"
-#include "dsound.h"
-#include "dsdriver.h"
 #include "dsound_private.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(dsound);
 
 /*****************************************************************************
  * IDirectSoundFullDuplex implementation structure

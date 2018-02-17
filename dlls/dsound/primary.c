@@ -23,22 +23,7 @@
  *       it leaves dsound in unusable (not really open) state.
  */
 
-#include <stdarg.h>
-
-#define NONAMELESSSTRUCT
-#define NONAMELESSUNION
-#include "windef.h"
-#include "winbase.h"
-#include "winuser.h"
-#include "mmsystem.h"
-#include "winternl.h"
-#include "mmddk.h"
-#include "wine/debug.h"
-#include "dsound.h"
-#include "dsdriver.h"
 #include "dsound_private.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(dsound);
 
 /** Calculate how long a fragment length of about 10 ms should be in frames
  *

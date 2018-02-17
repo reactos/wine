@@ -25,24 +25,7 @@
  *	Make DirectSoundCaptureCreate and DirectSoundCaptureCreate8 behave differently
  */
 
-#include <stdarg.h>
-
-#define NONAMELESSSTRUCT
-#define NONAMELESSUNION
-#include "windef.h"
-#include "winbase.h"
-#include "winuser.h"
-#include "mmsystem.h"
-#include "mmddk.h"
-#include "winternl.h"
-#include "winnls.h"
-#include "wine/debug.h"
-#include "dsound.h"
-#include "dsdriver.h"
 #include "dsound_private.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(dsound);
-
 
 /*****************************************************************************
  * IDirectSoundCaptureNotify implementation structure

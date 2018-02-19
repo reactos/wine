@@ -326,6 +326,8 @@ static inline struct amd64_thread_data *amd64_thread_data(void)
     return (struct amd64_thread_data *)NtCurrentTeb()->SystemReserved2;
 }
 
+extern void DECLSPEC_NORETURN __wine_syscall_dispatcher( void );
+
 /***********************************************************************
  * Dynamic unwind table
  */
@@ -2202,7 +2204,6 @@ static EXCEPTION_RECORD *setup_exception( ucontext_t *sigcontext, raise_func fun
         ULONG64           red_zone[16];
     } *stack;
     ULONG64 *rsp_ptr;
-    DWORD exception_code = 0;
 
     stack = (struct stack_layout *)(RSP_sig(sigcontext) & ~15);
 
@@ -2237,8 +2238,7 @@ static EXCEPTION_RECORD *setup_exception( ucontext_t *sigcontext, raise_func fun
     else if ((char *)(stack - 1) < (char *)NtCurrentTeb()->Tib.StackLimit)
     {
         /* stack access below stack limit, may be recoverable */
-        if (virtual_handle_stack_fault( stack - 1 )) exception_code = EXCEPTION_STACK_OVERFLOW;
-        else
+        if (!virtual_handle_stack_fault( stack - 1 ))
         {
             UINT diff = (char *)NtCurrentTeb()->Tib.StackLimit - (char *)(stack - 1);
             ERR( "stack overflow %u bytes in thread %04x eip %016lx esp %016lx stack %p-%p-%p\n",
@@ -2256,7 +2256,7 @@ static EXCEPTION_RECORD *setup_exception( ucontext_t *sigcontext, raise_func fun
     VALGRIND_MAKE_WRITABLE(stack, sizeof(*stack));
 #endif
     stack->rec.ExceptionRecord  = NULL;
-    stack->rec.ExceptionCode    = exception_code;
+    stack->rec.ExceptionCode    = STATUS_SUCCESS;
     stack->rec.ExceptionFlags   = EXCEPTION_CONTINUABLE;
     stack->rec.ExceptionAddress = (void *)RIP_sig(sigcontext);
     stack->rec.NumberParameters = 0;
@@ -2719,6 +2719,86 @@ static void raise_generic_exception( EXCEPTION_RECORD *rec, CONTEXT *context )
 
 
 /***********************************************************************
+ *           is_privileged_instr
+ *
+ * Check if the fault location is a privileged instruction.
+ */
+static inline DWORD is_privileged_instr( CONTEXT *context )
+{
+    const BYTE *instr = (BYTE *)context->Rip;
+    unsigned int prefix_count = 0;
+
+    for (;;) switch(*instr)
+    {
+    /* instruction prefixes */
+    case 0x2e:  /* %cs: */
+    case 0x36:  /* %ss: */
+    case 0x3e:  /* %ds: */
+    case 0x26:  /* %es: */
+    case 0x40:  /* rex */
+    case 0x41:  /* rex */
+    case 0x42:  /* rex */
+    case 0x43:  /* rex */
+    case 0x44:  /* rex */
+    case 0x45:  /* rex */
+    case 0x46:  /* rex */
+    case 0x47:  /* rex */
+    case 0x48:  /* rex */
+    case 0x49:  /* rex */
+    case 0x4a:  /* rex */
+    case 0x4b:  /* rex */
+    case 0x4c:  /* rex */
+    case 0x4d:  /* rex */
+    case 0x4e:  /* rex */
+    case 0x4f:  /* rex */
+    case 0x64:  /* %fs: */
+    case 0x65:  /* %gs: */
+    case 0x66:  /* opcode size */
+    case 0x67:  /* addr size */
+    case 0xf0:  /* lock */
+    case 0xf2:  /* repne */
+    case 0xf3:  /* repe */
+        if (++prefix_count >= 15) return EXCEPTION_ILLEGAL_INSTRUCTION;
+        instr++;
+        continue;
+
+    case 0x0f: /* extended instruction */
+        switch(instr[1])
+        {
+        case 0x06: /* clts */
+        case 0x08: /* invd */
+        case 0x09: /* wbinvd */
+        case 0x20: /* mov crX, reg */
+        case 0x21: /* mov drX, reg */
+        case 0x22: /* mov reg, crX */
+        case 0x23: /* mov reg drX */
+            return EXCEPTION_PRIV_INSTRUCTION;
+        }
+        return 0;
+    case 0x6c: /* insb (%dx) */
+    case 0x6d: /* insl (%dx) */
+    case 0x6e: /* outsb (%dx) */
+    case 0x6f: /* outsl (%dx) */
+    case 0xcd: /* int $xx */
+    case 0xe4: /* inb al,XX */
+    case 0xe5: /* in (e)ax,XX */
+    case 0xe6: /* outb XX,al */
+    case 0xe7: /* out XX,(e)ax */
+    case 0xec: /* inb (%dx),%al */
+    case 0xed: /* inl (%dx),%eax */
+    case 0xee: /* outb %al,(%dx) */
+    case 0xef: /* outl %eax,(%dx) */
+    case 0xf4: /* hlt */
+    case 0xfa: /* cli */
+    case 0xfb: /* sti */
+        return EXCEPTION_PRIV_INSTRUCTION;
+    default:
+        return 0;
+    }
+}
+
+
+/***********************************************************************
  *           handle_interrupt
  *
  * Handle an interrupt.
@@ -2727,6 +2807,9 @@ static inline BOOL handle_interrupt( unsigned int interrupt, EXCEPTION_RECORD *r
 {
     switch(interrupt)
     {
+    case 0x2c:
+        rec->ExceptionCode = STATUS_ASSERTION_FAILURE;
+        return TRUE;
     case 0x2d:
         context->Rip += 3;
         rec->ExceptionCode = EXCEPTION_BREAKPOINT;
@@ -2757,8 +2840,9 @@ static void segv_handler( int signal, siginfo_t *siginfo, void *sigcontext )
         virtual_handle_stack_fault( siginfo->si_addr ))
     {
         /* check if this was the last guard page */
-        if ((char *)siginfo->si_addr < (char *)NtCurrentTeb()->DeallocationStack + 2*4096)
+        if ((char *)siginfo->si_addr < (char *)NtCurrentTeb()->DeallocationStack + 3*4096)
         {
+            virtual_handle_stack_fault( (char *)siginfo->si_addr - 4096 );
             rec = setup_exception( sigcontext, raise_segv_exception );
             rec->ExceptionCode = EXCEPTION_STACK_OVERFLOW;
         }
@@ -2766,7 +2850,6 @@ static void segv_handler( int signal, siginfo_t *siginfo, void *sigcontext )
     }
 
     rec = setup_exception( sigcontext, raise_segv_exception );
-    if (rec->ExceptionCode == EXCEPTION_STACK_OVERFLOW) return;
 
     switch(TRAP_sig(ucontext))
     {
@@ -2788,15 +2871,15 @@ static void segv_handler( int signal, siginfo_t *siginfo, void *sigcontext )
         {
             CONTEXT *win_context = get_exception_context( rec );
             WORD err = ERROR_sig(ucontext);
+            if (!err && (rec->ExceptionCode = is_privileged_instr( win_context ))) break;
             if ((err & 7) == 2 && handle_interrupt( err >> 3, rec, win_context )) break;
-            rec->ExceptionCode = err ? EXCEPTION_ACCESS_VIOLATION : EXCEPTION_PRIV_INSTRUCTION;
             rec->ExceptionCode = EXCEPTION_ACCESS_VIOLATION;
         }
         break;
     case TRAP_x86_PAGEFLT:  /* Page fault */
         rec->ExceptionCode = EXCEPTION_ACCESS_VIOLATION;
         rec->NumberParameters = 2;
-        rec->ExceptionInformation[0] = (ERROR_sig(ucontext) & 2) != 0;
+        rec->ExceptionInformation[0] = (ERROR_sig(ucontext) >> 1) & 0x09;
         rec->ExceptionInformation[1] = (ULONG_PTR)siginfo->si_addr;
         break;
     case TRAP_x86_ALIGNFLT:  /* Alignment check exception */
@@ -2816,6 +2899,12 @@ static void segv_handler( int signal, siginfo_t *siginfo, void *sigcontext )
     }
 }
 
+static inline DWORD is_icebp_instr( CONTEXT *context )
+{
+    const BYTE *instr = (BYTE *)context->Rip - 1;
+    return (*instr == 0xf1) ? EXCEPTION_SINGLE_STEP : 0;
+}
+
 /**********************************************************************
  *		trap_handler
  *
@@ -2832,8 +2921,12 @@ static void trap_handler( int signal, siginfo_t *siginfo, void *sigcontext )
         rec->ExceptionCode = EXCEPTION_SINGLE_STEP;
         break;
     case TRAP_BRKPT:   /* Breakpoint exception */
+    {
+        CONTEXT *win_context = get_exception_context( rec );
+        if ((rec->ExceptionCode = is_icebp_instr( win_context ))) break;
         rec->ExceptionAddress = (char *)rec->ExceptionAddress - 1;  /* back up over the int3 instruction */
         /* fall through */
+    }
     default:
         rec->ExceptionCode = EXCEPTION_BREAKPOINT;
         rec->NumberParameters = 1;
@@ -2973,6 +3066,7 @@ NTSTATUS signal_alloc_thread( TEB **teb )
     {
         (*teb)->Tib.Self = &(*teb)->Tib;
         (*teb)->Tib.ExceptionList = (void *)~0UL;
+        (*teb)->WOW32Reserved = __wine_syscall_dispatcher;
     }
     return status;
 }
@@ -3158,6 +3252,12 @@ void signal_init_process( CONTEXT *context, LPTHREAD_START_ROUTINE entry )
     exit(1);
 }
 
+/**********************************************************************
+ *    signal_init_early
+ */
+void signal_init_early(void)
+{
+}
 
 /**********************************************************************
  *              RtlAddFunctionTable   (NTDLL.@)
@@ -4073,7 +4173,7 @@ __ASM_GLOBAL_FUNC( RtlRaiseException,
  */
 USHORT WINAPI RtlCaptureStackBackTrace( ULONG skip, ULONG count, PVOID *buffer, ULONG *hash )
 {
-    FIXME( "(%d, %d, %p, %p) stub!\n", skip, count, buffer, hash );
+    TRACE( "(%d, %d, %p, %p) stub!\n", skip, count, buffer, hash );
     return 0;
 }
 

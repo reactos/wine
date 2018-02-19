@@ -45,6 +45,7 @@
 #include "wine/unicode.h"
 #include "ntdll_misc.h"
 #include "inaddr.h"
+#include "in6addr.h"
 #include "ddk/ntddk.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(ntdll);
@@ -903,6 +904,16 @@ NTSTATUS WINAPI RtlIpv4StringToAddressW(const WCHAR *str, BOOLEAN strict, const 
 }
 
 /***********************************************************************
+ * RtlIpv6StringToAddressExW [NTDLL.@]
+ */
+NTSTATUS NTAPI RtlIpv6StringToAddressExW(LPCWSTR str, IN6_ADDR *address, PULONG scope, PUSHORT port)
+{
+    FIXME("(%s, %p, %p, %p): stub\n", debugstr_w(str), address, scope, port);
+
+    return STATUS_INVALID_PARAMETER;
+}
+
+/***********************************************************************
  * RtlIpv4AddressToStringExW [NTDLL.@]
  *
  * Convert the given ipv4 address and optional the port to a string
@@ -1671,4 +1682,28 @@ RTL_UNLOAD_EVENT_TRACE * WINAPI RtlGetUnloadEventTrace(void)
 {
     FIXME("stub!\n");
     return NULL;
+}
+
+/*********************************************************************
+ *           RtlQueryPackageIdentity [NTDLL.@]
+ */
+NTSTATUS WINAPI RtlQueryPackageIdentity(HANDLE token, WCHAR *fullname, SIZE_T *fullname_size,
+                                        WCHAR *appid, SIZE_T *appid_size, BOOLEAN *packaged)
+{
+    FIXME("(%p, %p, %p, %p, %p, %p): stub\n", token, fullname, fullname_size, appid, appid_size, packaged);
+    return STATUS_NOT_FOUND;
+}
+
+/*********************************************************************
+ *           RtlGetUnloadEventTraceEx [NTDLL.@]
+ */
+void WINAPI RtlGetUnloadEventTraceEx(ULONG **size, ULONG **count, VOID **trace)
+{
+    static ULONG dummy_size, dummy_count;
+
+    FIXME("(%p, %p, %p): stub!\n", size, count, trace);
+
+    if (size)  *size  = &dummy_size;
+    if (count) *count = &dummy_count;
+    if (trace) *trace = NULL;
 }

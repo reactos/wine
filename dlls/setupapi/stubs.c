@@ -180,8 +180,8 @@ CONFIGRET WINAPI CM_Get_Device_ID_List_SizeW( PULONG  pulLen, PCWSTR  pszFilter,
 DWORD WINAPI CM_Get_Parent(PDEVINST pdnDevInst, DEVINST dnDevInst, ULONG ulFlags)
 {
     FIXME("%p 0x%08x 0x%08x stub\n", pdnDevInst, dnDevInst, ulFlags);
-    *pdnDevInst = dnDevInst;
-    return CR_SUCCESS;
+    *pdnDevInst = 0;
+    return CR_NO_SUCH_DEVNODE;
 }
 
 /***********************************************************************
@@ -227,24 +227,6 @@ INT WINAPI SetupPromptReboot( HSPFILEQ file_queue, HWND owner, BOOL scan_only )
 {
     FIXME("%p, %p, %d: stub\n", file_queue, owner, scan_only);
     return 0;
-}
-
-/***********************************************************************
- *      SetupQueryDrivesInDiskSpaceListA (SETUPAPI.@)
- */
-BOOL WINAPI SetupQueryDrivesInDiskSpaceListA(HDSKSPC disk_space, PSTR return_buffer, DWORD return_buffer_size, PDWORD required_size)
-{
-    FIXME("%p, %p, %d, %p: stub\n", disk_space, return_buffer, return_buffer_size, required_size);
-    return FALSE;
-}
-
-/***********************************************************************
- *      SetupQueryDrivesInDiskSpaceListW (SETUPAPI.@)
- */
-BOOL WINAPI SetupQueryDrivesInDiskSpaceListW(HDSKSPC disk_space, PWSTR return_buffer, DWORD return_buffer_size, PDWORD required_size)
-{
-    FIXME("%p, %p, %d, %p: stub\n", disk_space, return_buffer, return_buffer_size, required_size);
-    return FALSE;
 }
 
 /***********************************************************************

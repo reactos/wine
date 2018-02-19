@@ -288,6 +288,11 @@ typedef struct _CERT_KEY_ATTRIBUTES_INFO {
     PCERT_PRIVATE_KEY_VALIDITY pPrivateKeyUsagePeriod;
 } CERT_KEY_ATTRIBUTES_INFO, *PCERT_KEY_ATTRIBUTES_INFO;
 
+typedef struct _CERT_ECC_SIGNATURE {
+    CRYPT_UINT_BLOB r;
+    CRYPT_UINT_BLOB s;
+} CERT_ECC_SIGNATURE, *PCERT_ECC_SIGNATURE;
+
 /* byte 0 */
 #define CERT_DIGITAL_SIGNATURE_KEY_USAGE 0x80
 #define CERT_NON_REPUDIATION_KEY_USAGE   0x40
@@ -1239,6 +1244,17 @@ typedef BOOL (WINAPI *PFN_CRYPT_ENUM_OID_FUNC)(DWORD dwEncodingType,
 
 #define CRYPT_MATCH_ANY_ENCODING_TYPE 0xffffffff
 
+#define CALG_OID_INFO_CNG_ONLY   0xffffffff
+#define CALG_OID_INFO_PARAMETERS 0xfffffffe
+
+#define CRYPT_OID_INFO_HASH_PARAMETERS_ALGORITHM     (const WCHAR []){'C','r','y','p','t','O','I','D','I','n','f','o','H','a','s','h','P','a','r','a','m','e','t','e','r','s',0}
+#define CRYPT_OID_INFO_ECC_PARAMETERS_ALGORITHM      (const WCHAR []){'C','r','y','p','t','O','I','D','I','n','f','o','E','C','C','P','a','r','a','m','e','t','e','r','s',0}
+#define CRYPT_OID_INFO_MGF1_PARAMETERS_ALGORITHM     (const WCHAR []){'C','r','y','p','t','O','I','D','I','n','f','o','M','g','f','1','P','a','r','a','m','e','t','e','r','s',0}
+#define CRYPT_OID_INFO_NO_SIGN_ALGORITHM             (const WCHAR []){'C','r','y','p','t','O','I','D','I','n','f','o','N','o','S','i','g','n',0}
+#define CRYPT_OID_INFO_OAEP_PARAMETERS_ALGORITHM     (const WCHAR []){'C','r','y','p','t','O','I','D','I','n','f','o','O','A','E','P','P','a','r','a','m','e','t','e','r','s',0}
+#define CRYPT_OID_INFO_ECC_WRAP_PARAMETERS_ALGORITHM (const WCHAR []){'C','r','y','p','t','O','I','D','I','n','f','o','E','C','C','W','r','a','p','P','a','r','a','m','e','t','e','r','s',0}
+#define CRYPT_OID_INFO_NO_PARAMETERS_ALGORITHM       (const WCHAR []){'C','r','y','p','t','O','I','D','I','n','f','o','N','o','P','a','r','a','m','e','t','e','r','s',0}
+
 typedef struct _CRYPT_OID_INFO {
     DWORD   cbSize;
     LPCSTR  pszOID;
@@ -1250,6 +1266,10 @@ typedef struct _CRYPT_OID_INFO {
         DWORD  dwLength;
     } DUMMYUNIONNAME;
     CRYPT_DATA_BLOB ExtraInfo;
+#ifdef CRYPT_OID_INFO_HAS_EXTRA_FIELDS
+    LPCWSTR         pwszCNGAlgid;
+    LPCWSTR         pwszCNGExtraAlgid;
+#endif
 } CRYPT_OID_INFO, *PCRYPT_OID_INFO;
 typedef const CRYPT_OID_INFO CCRYPT_OID_INFO, *PCCRYPT_OID_INFO;
 
@@ -2878,6 +2898,12 @@ typedef struct _CTL_FIND_SUBJECT_PARA
 #define szOID_X957                          "1.2.840.10040"
 #define szOID_X957_DSA                      "1.2.840.10040.4.1"
 #define szOID_X957_SHA1DSA                  "1.2.840.10040.4.3"
+#define szOID_ECC_PUBLIC_KEY                "1.2.840.10045.2.1"
+#define szOID_ECC_CURVE_P256                "1.2.840.10045.3.1.7"
+#define szOID_ECDSA_SPECIFIED               "1.2.840.10045.4.3"
+#define szOID_ECDSA_SHA256                  "1.2.840.10045.4.3.2"
+#define szOID_ECDSA_SHA384                  "1.2.840.10045.4.3.3"
+#define szOID_ECDSA_SHA512                  "1.2.840.10045.4.3.4"
 #define szOID_DS                            "2.5"
 #define szOID_DSALG                         "2.5.8"
 #define szOID_DSALG_CRPT                    "2.5.8.1"
@@ -2919,6 +2945,8 @@ typedef struct _CTL_FIND_SUBJECT_PARA
 #define szOID_OIWDIR_SIGN                   "1.3.14.7.2.3"
 #define szOID_OIWDIR_md2                    "1.3.14.7.2.2.1"
 #define szOID_OIWDIR_md2RSA                 "1.3.14.7.2.3.1"
+#define szOID_ECC_CURVE_P384                "1.3.132.0.34"
+#define szOID_ECC_CURVE_P521                "1.3.132.0.35"
 #define szOID_INFOSEC                       "2.16.840.1.101.2.1"
 #define szOID_INFOSEC_sdnsSignature         "2.16.840.1.101.2.1.1.1"
 #define szOID_INFOSEC_mosaicSignature       "2.16.840.1.101.2.1.1.2"
@@ -3158,6 +3186,10 @@ typedef struct _CTL_FIND_SUBJECT_PARA
 #define szOID_NETSCAPE_DATA_TYPE             "2.16.840.1.113730.2"
 #define szOID_NETSCAPE_CERT_SEQUENCE         "2.16.840.1.113730.2.5"
 
+#define szOID_NIST_sha256                    "2.16.840.1.101.3.4.2.1"
+#define szOID_NIST_sha384                    "2.16.840.1.101.3.4.2.2"
+#define szOID_NIST_sha512                    "2.16.840.1.101.3.4.2.3"
+
 /* Bits for szOID_NETSCAPE_CERT_TYPE */
 #define NETSCAPE_SSL_CLIENT_AUTH_CERT_TYPE 0x80
 #define NETSCAPE_SSL_SERVER_AUTH_CERT_TYPE 0x40
@@ -3220,6 +3252,7 @@ typedef struct _CTL_FIND_SUBJECT_PARA
 #define X509_PKIX_POLICY_QUALIFIER_USERNOTICE ((LPCSTR)46)
 #define X509_DH_PUBLICKEY                    X509_MULTI_BYTE_UINT
 #define X509_DH_PARAMETERS                   ((LPCSTR)47)
+#define X509_ECC_SIGNATURE                   ((LPCSTR)47)
 #define PKCS_ATTRIBUTES                      ((LPCSTR)48)
 #define PKCS_SORTED_CTL                      ((LPCSTR)49)
 #define X942_DH_PARAMETERS                   ((LPCSTR)50)
@@ -3237,6 +3270,7 @@ typedef struct _CTL_FIND_SUBJECT_PARA
 #define CMC_ADD_EXTENSIONS                   ((LPCSTR)62)
 #define CMC_ADD_ATTRIBUTES                   ((LPCSTR)63)
 #define X509_CERTIFICATE_TEMPLATE            ((LPCSTR)64)
+#define X509_OBJECT_IDENTIFIER               ((LPCSTR)73)
 #define PKCS7_SIGNER_INFO                    ((LPCSTR)500)
 #define CMS_SIGNER_INFO                      ((LPCSTR)501)
 

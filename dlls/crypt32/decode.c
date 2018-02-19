@@ -5645,6 +5645,9 @@ static BOOL CRYPT_AsnDecodeCMSSignerInfoInternal(const BYTE *pbEncoded,
        offsetof(CMSG_CMS_SIGNER_INFO, AuthAttrs),
        CRYPT_AsnDecodePKCSAttributesInternal, sizeof(CRYPT_ATTRIBUTES),
        TRUE, TRUE, offsetof(CMSG_CMS_SIGNER_INFO, AuthAttrs.rgAttr), 0 },
+     /* FIXME: Tests show that CertOpenStore accepts such certificates, but
+      * how exactly should they be interpreted? */
+     { ASN_CONSTRUCTOR | ASN_UNIVERSAL | 0x11, 0, NULL, 0, TRUE, FALSE, 0, 0 },
      { ASN_SEQUENCEOF, offsetof(CMSG_CMS_SIGNER_INFO, HashEncryptionAlgorithm),
        CRYPT_AsnDecodeAlgorithmId, sizeof(CRYPT_ALGORITHM_IDENTIFIER),
        FALSE, TRUE, offsetof(CMSG_CMS_SIGNER_INFO,
@@ -5887,6 +5890,75 @@ BOOL CRYPT_AsnDecodePKCSEnvelopedData(const BYTE *pbEncoded, DWORD cbEncoded,
     return ret;
 }
 
+static BOOL WINAPI CRYPT_AsnDecodeObjectIdentifier(DWORD dwCertEncodingType,
+ LPCSTR lpszStructType, const BYTE *pbEncoded, DWORD cbEncoded, DWORD dwFlags,
+ PCRYPT_DECODE_PARA pDecodePara, void *pvStructInfo, DWORD *pcbStructInfo)
+{
+    DWORD bytesNeeded = 0;
+    BOOL ret;
+
+    __TRY
+    {
+        ret = CRYPT_AsnDecodeOidInternal(pbEncoded, cbEncoded, dwFlags & ~CRYPT_DECODE_ALLOC_FLAG,
+                                         NULL, &bytesNeeded, NULL);
+        if (ret)
+        {
+            if (!pvStructInfo)
+                *pcbStructInfo = bytesNeeded;
+            else if ((ret = CRYPT_DecodeEnsureSpace(dwFlags, pDecodePara, pvStructInfo, pcbStructInfo, bytesNeeded)))
+            {
+                LPSTR *info;
+
+                if (dwFlags & CRYPT_DECODE_ALLOC_FLAG)
+                    pvStructInfo = *(BYTE **)pvStructInfo;
+
+                info = pvStructInfo;
+                *info = (void *)((BYTE *)info + sizeof(*info));
+                ret = CRYPT_AsnDecodeOidInternal(pbEncoded, cbEncoded, dwFlags & ~CRYPT_DECODE_ALLOC_FLAG,
+                                                 pvStructInfo, &bytesNeeded, NULL);
+                if (!ret && (dwFlags & CRYPT_DECODE_ALLOC_FLAG))
+                    CRYPT_FreeSpace(pDecodePara, info);
+            }
+        }
+    }
+    __EXCEPT_PAGE_FAULT
+    {
+        SetLastError(STATUS_ACCESS_VIOLATION);
+        ret = FALSE;
+    }
+    __ENDTRY
+    return ret;
+}
+
+static BOOL WINAPI CRYPT_AsnDecodeEccSignature(DWORD dwCertEncodingType,
+ LPCSTR lpszStructType, const BYTE *pbEncoded, DWORD cbEncoded, DWORD dwFlags,
+ PCRYPT_DECODE_PARA pDecodePara, void *pvStructInfo, DWORD *pcbStructInfo)
+{
+    BOOL ret;
+    struct AsnDecodeSequenceItem items[] = {
+     { ASN_INTEGER, offsetof(CERT_ECC_SIGNATURE, r),
+       CRYPT_AsnDecodeUnsignedIntegerInternal, sizeof(CRYPT_UINT_BLOB), FALSE,
+       TRUE, offsetof(CERT_ECC_SIGNATURE, r.pbData), 0 },
+     { ASN_INTEGER, offsetof(CERT_ECC_SIGNATURE, s),
+       CRYPT_AsnDecodeUnsignedIntegerInternal, sizeof(CRYPT_UINT_BLOB), FALSE,
+       TRUE, offsetof(CERT_ECC_SIGNATURE, s.pbData), 0 },
+    };
+
+    __TRY
+    {
+        ret = CRYPT_AsnDecodeSequence(items, sizeof(items) / sizeof(items[0]),
+         pbEncoded, cbEncoded, dwFlags, pDecodePara, pvStructInfo,
+         pcbStructInfo, NULL, NULL);
+    }
+    __EXCEPT_PAGE_FAULT
+    {
+        SetLastError(STATUS_ACCESS_VIOLATION);
+        ret = FALSE;
+    }
+    __ENDTRY
+    return ret;
+}
+
 static CryptDecodeObjectExFunc CRYPT_GetBuiltinDecoder(DWORD dwCertEncodingType,
  LPCSTR lpszStructType)
 {
@@ -6026,6 +6098,12 @@ static CryptDecodeObjectExFunc CRYPT_GetBuiltinDecoder(DWORD dwCertEncodingType,
         case LOWORD(CMS_SIGNER_INFO):
             decodeFunc = CRYPT_AsnDecodeCMSSignerInfo;
             break;
+        case LOWORD(X509_OBJECT_IDENTIFIER):
+            decodeFunc = CRYPT_AsnDecodeObjectIdentifier;
+            break;
+        case LOWORD(X509_ECC_SIGNATURE):
+            decodeFunc = CRYPT_AsnDecodeEccSignature;
+            break;
         }
     }
     else if (!strcmp(lpszStructType, szOID_CERT_EXTENSIONS))
@@ -6080,6 +6158,8 @@ static CryptDecodeObjectExFunc CRYPT_GetBuiltinDecoder(DWORD dwCertEncodingType,
         decodeFunc = CRYPT_AsnDecodePolicyQualifierUserNotice;
     else if (!strcmp(lpszStructType, szOID_CTL))
         decodeFunc = CRYPT_AsnDecodeCTL;
+    else if (!strcmp(lpszStructType, szOID_ECC_PUBLIC_KEY))
+        decodeFunc = CRYPT_AsnDecodeObjectIdentifier;
     return decodeFunc;
 }
 
